@@ -453,24 +453,33 @@ class AICropSowingPredictor:
         window_days = (window_end - window_start).days
         window_name = f"Window {(window_start - datetime.now()).days + 1}-{(window_end - datetime.now()).days + 1}"
 
-        # Get forecast data for this window
-        window_forecast = forecast_df[
-            (forecast_df["date"] >= window_start) & (forecast_df["date"] <= window_end)
-        ]
+        # Get forecast data for this window - handle missing columns gracefully
+        rain_col = "rain_sum" if "rain_sum" in forecast_df.columns else ("rain" if "rain" in forecast_df.columns else None)
+        temp_max_col = "temp_max" if "temp_max" in forecast_df.columns else None
+        temp_min_col = "temp_min" if "temp_min" in forecast_df.columns else None
+        date_col = "date" if "date" in forecast_df.columns else None
+
+        if date_col is None or rain_col is None:
+            # No usable forecast data
+            window_forecast = pd.DataFrame()
+        else:
+            window_forecast = forecast_df[
+                (forecast_df[date_col] >= window_start) & (forecast_df[date_col] <= window_end)
+            ]
 
         # Rainfall forecast
-        forecast_rain = window_forecast["rain_sum"].sum() if not window_forecast.empty else 0
+        forecast_rain = window_forecast[rain_col].sum() if not window_forecast.empty and rain_col else 0.0
 
         # Temperature
         temp_c = 28.0
-        if not window_forecast.empty:
-            temp_c = (window_forecast["temp_max"].mean() + window_forecast["temp_min"].mean()) / 2
+        if not window_forecast.empty and temp_max_col and temp_min_col:
+            temp_c = (window_forecast[temp_max_col].mean() + window_forecast[temp_min_col].mean()) / 2
 
         # Dry spell in window
         dry_spell_days = 0
-        if not window_forecast.empty:
+        if not window_forecast.empty and rain_col:
             dry_days = 0
-            for rain in window_forecast["rain_sum"]:
+            for rain in window_forecast[rain_col]:
                 if rain < 1.0:
                     dry_days += 1
                 else:
@@ -481,20 +490,20 @@ class AICropSowingPredictor:
         is_forecast_supported = not window_forecast.empty and window_start <= datetime.now() + timedelta(days=7)
 
         # Use same scoring as current but with window-specific data
-        crop_params = self._get_crop_params("soybean")  # placeholder
+        crop_params = self._get_crop_params(crop)
 
         # Rainfall score
-        rain_req = self._get_crop_params("soybean")["rain_mm"]
+        rain_req = crop_params["rain_mm"]
         rain_score, _ = self._score_rainfall_adequacy(forecast_rain, rain_req)
 
         # Temperature
         temp_score, _ = self._score_temperature(
-            temp_c, 20, 30  # placeholder
+            temp_c, crop_params["temp_opt"][0], crop_params["temp_opt"][1]
         )
 
         # Dry spell
         dry_spell_score, _ = self._score_dry_spell(
-            dry_spell_days, 4  # placeholder
+            dry_spell_days, crop_params.get("dry_spell_tol", 4)
         )
 
         # Soil moisture (simplified)
@@ -519,7 +528,7 @@ class AICropSowingPredictor:
             reasons=[f"Forecast rain: {forecast_rain:.1f}mm", f"Temp: {temp_c:.1f}°C"],
             data_sources=["Forecast (Open-Meteo)"],
             confidence=60,
-            is_forecast_supported=True,
+            is_forecast_supported=bool(forecast_df is not None and not forecast_df.empty),
             rainfall_score=rain_score,
             soil_moisture_score=70,
             temperature_score=temp_score,
@@ -544,9 +553,9 @@ class AICropSowingPredictor:
         """
         Main prediction entry point.
         """
-        # Extract weather data from weather_data dict
+        # Use the forecast_df parameter directly (it's the forecast DataFrame)
         historical = weather_data.get("historical") if weather_data else None
-        forecast = weather_data.get("forecast") if weather_data else None
+        forecast = forecast_df  # Use the forecast_df parameter directly
         recent = weather_data.get("recent") if weather_data else None
 
         # Get crop parameters

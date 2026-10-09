@@ -7,6 +7,7 @@ import json
 import numpy as np
 import pandas as pd
 from datetime import datetime, timezone
+import warnings
 from models.decision_engine import compute_window_scores, recommend_window
 from analysis.field_outlook import generate_field_outlook
 from analysis.ai_predictor import create_predictor, AICropSowingPredictor
@@ -252,7 +253,7 @@ st.markdown("""
 
     /* Card styling */
     .agri-card {
-        background: white;
+        background: var(--pale-green);
         border: 1px solid var(--border-color);
         border-radius: 10px;
         padding: 1.25rem;
@@ -265,7 +266,7 @@ st.markdown("""
     .agri-card .card-title {
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--gray-muted);
+        color: var(--dark-muted-green);
         text-transform: uppercase;
         letter-spacing: 0.05em;
         margin-bottom: 0.5rem;
@@ -273,13 +274,24 @@ st.markdown("""
     .agri-card .card-value {
         font-size: 1.75rem;
         font-weight: 700;
-        color: var(--forest-green);
+        color: var(--dark-forest);
         line-height: 1.2;
     }
     .agri-card .card-subtitle {
         font-size: 0.75rem;
-        color: var(--gray-muted);
+        color: var(--dark-muted-green);
         margin-top: 0.25rem;
+    }
+    /* Ensure all text inside agri-card is readable */
+    .agri-card * {
+        color: var(--dark-forest);
+    }
+    .agri-card .card-title,
+    .agri-card .card-subtitle {
+        color: var(--dark-muted-green) !important;
+    }
+    .agri-card .card-value {
+        color: var(--dark-forest) !important;
     }
 
     /* Status colors for metric values */
@@ -302,8 +314,8 @@ st.markdown("""
         border-radius: 4px;
     }
     .metric-unavailable { 
-        color: var(--gray-muted) !important; 
-        background: var(--gray-light);
+        color: var(--dark-muted-green) !important; 
+        background: var(--muted-green-light);
         padding: 0.25rem 0.5rem;
         border-radius: 4px;
     }
@@ -319,6 +331,11 @@ st.markdown("""
     }
     @media (max-width: 640px) {
         .card-grid-4, .card-grid-3, .card-grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* Ensure text in card grids is readable */
+    .card-grid-3 .agri-card, .card-grid-4 .agri-card, .card-grid-2 .agri-card {
+        color: var(--dark-forest);
     }
 
     /* Image cards */
@@ -364,7 +381,7 @@ st.markdown("""
     .status-dot-cached { background: var(--amber); }
     .status-dot-unavailable { background: var(--gray-muted); }
 
-    /* Sidebar improvements */
+/* Sidebar improvements */
     [data-testid="stSidebar"] {
         background: var(--warm-cream);
         border-right: 1px solid var(--border-color);
@@ -376,7 +393,15 @@ st.markdown("""
     }
     [data-testid="stSidebar"] .stMarkdown, 
     [data-testid="stSidebar"] .stCaption,
-    [data-testid="stSidebar"] p {
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] div {
+        color: var(--dark-muted-green) !important;
+    }
+    [data-testid="stSidebar"] .stSelectbox label,
+    [data-testid="stSidebar"] .stRadio label,
+    [data-testid="stSidebar"] .stCheckbox label {
         color: var(--dark-muted-green) !important;
     }
 
@@ -400,6 +425,10 @@ st.markdown("""
         font-weight: 700 !important;
         color: var(--dark-forest) !important;
     }
+    /* Fix metric delta/change indicator */
+    [data-testid="stMetricDelta"] {
+        color: var(--dark-muted-green) !important;
+    }
 
     /* Expander styling */
     [data-testid="stExpander"] {
@@ -409,6 +438,12 @@ st.markdown("""
     }
     [data-testid="stExpander"] summary {
         font-weight: 600;
+        color: var(--dark-forest);
+    }
+    [data-testid="stExpander"] summary * {
+        color: var(--dark-forest) !important;
+    }
+    [data-testid="stExpander"] div {
         color: var(--dark-forest);
     }
 
@@ -439,6 +474,10 @@ st.markdown("""
     .stAlert[data-baseweb="notification"][kind="success"] {
         background: var(--pale-green) !important;
         border-left: 4px solid var(--forest-green) !important;
+    }
+    /* Ensure alert text is always readable */
+    .stAlert * {
+        color: var(--dark-forest) !important;
     }
 
     /* Button styling */
