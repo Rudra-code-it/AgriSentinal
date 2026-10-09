@@ -73,6 +73,76 @@ except Exception as _soil_import_error:  # pragma: no cover
 else:
     SOIL_IMPORT_ERROR = None
 
+
+# --- Data Loader Functions (wrappers with caching) ---
+
+@st.cache_data(ttl=1800, show_spinner=False, max_entries=16)
+def load_satellite_data(polygon):
+    """Live Sentinel-2 retrieval for a field AOI, memoised for 30 minutes."""
+    if get_field_satellite_data is None:
+        return None
+    return get_field_satellite_data(polygon)
+
+
+@st.cache_data(ttl=1800, show_spinner=False, max_entries=16)
+def load_weather_data(lat, lon):
+    """Retrieve historical and forecast weather for a field centroid.
+    
+    Returns a dict with historical_df, forecast_df, recent_rainfall_df,
+    or None on failure. Memoised for 30 minutes.
+    """
+    if WeatherService is None:
+        return None
+    service = WeatherService().set_location(lat, lon)
+    historical = service.get_historical_weather()
+    forecast = service.get_forecast(days=7)
+    recent = service.get_recent_rainfall(days=30)
+    return {
+        "historical": historical,
+        "forecast": forecast,
+        "recent": recent,
+        "source": "Open-Meteo",
+        "retrieved_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+    }
+
+
+@st.cache_data(ttl=1800, show_spinner=False, max_entries=16)
+def load_monsoon_analysis(historical_df):
+    """Compute monsoon onset, anomaly, and historical summary from rainfall DataFrame."""
+    if historical_df is None or historical_df.empty:
+        return None
+    onset = calculate_monsoon_onset(historical_df) if calculate_monsoon_onset else None
+    typical = calculate_typical_onset(historical_df) if calculate_typical_onset else None
+    summary = summarize_historical_rainfall(historical_df) if summarize_historical_rainfall else None
+    return {
+        "onset": onset,
+        "typical": typical,
+        "summary": summary,
+    }
+
+
+@st.cache_data(ttl=1800, show_spinner=False, max_entries=16)
+def load_soil_data(lat, lon, manual_soil_type=None):
+    """Retrieve soil information for field coordinates.
+    
+    Returns dict with soil properties and source info, or None on failure.
+    """
+    if SoilService is None:
+        return None
+    service = SoilService()
+    if manual_soil_type:
+        soil_info = service.get_soil_info(soil_identifier=manual_soil_type)
+        soil_info["source"] = "manual_user_input"
+        soil_info["note"] = "User-provided soil type (not measured or retrieved from SoilGrids)"
+        return soil_info
+    else:
+        soil_info = service.get_soil_info(latitude=lat, longitude=lon)
+        soil_info["source"] = soil_info.get("source", "unknown")
+        if soil_info["source"] == "fallback_local":
+            soil_info["note"] = "Fallback local mapping by region (not SoilGrids measurement)"
+        return soil_info
+
+
 # Custom CSS for modern agricultural dashboard styling
 st.markdown("""
 <style>
@@ -885,6 +955,11 @@ else:
     # 3. SOWING WINDOW RECOMMENDATION
     # ============================================================
     st.subheader("Sowing Window Recommendation")
+
+    # Extract weather variables safely (may be undefined if weather_data unavailable)
+    recent = weather_data.get("recent") if weather_data else None
+    historical = weather_data.get("historical") if weather_data else None
+    forecast = weather_data.get("forecast") if weather_data else None
 
     # Gather data for decision engine
     if weather_data and historical is not None and not historical.empty:
