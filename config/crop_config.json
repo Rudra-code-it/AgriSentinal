@@ -1,0 +1,62 @@
+{
+  "soybean": {
+    "sowing_period": "June to July",
+    "crop_duration": "90-120 days",
+    "moisture_requirement": "500-600 mm",
+    "establishment_rainfall": "50-80 mm within 2-3 weeks of sowing",
+    "water_requirement": "450-650 mm",
+    "dry_spell_tolerance": "4-5 days during vegetative growth",
+    "monsoon_dependence": "high",
+    "optimal_temp": "25-30°C"
+  },
+  "maize": {
+    "sowing_period": "June to July",
+    "crop_duration": "100-130 days",
+    "moisture_requirement": "500-700 mm",
+    "establishment_rainfall": "80-100 mm within 2-3 weeks of sowing",
+    "water_requirement": "500-900 mm",
+    "dry_spell_tolerance": "5-7 days during vegetative growth",
+    "monsoon_dependence": "high",
+    "optimal_temp": "22-28°C"
+  },
+  "rice": {
+    "sowing_period": "May to June (transplanting June to July)",
+    "crop_duration": "120-180 days",
+    "moisture_requirement": "800-1200 mm",
+    "establishment_rainfall": "100-150 mm continuous water within 1 week of transplanting",
+    "water_requirement": "1000-1600 mm",
+    "dry_spell_tolerance": "2-3 days maximum (rice is water-loving)",
+    "monsoon_dependence": "very high",
+    "optimal_temp": "20-28°C"
+  },
+  "cotton": {
+    "sowing_period": "June to July",
+    "crop_duration": "150-200 days",
+    "moisture_requirement": "400-500 mm",
+    "establishment_rainfall": "50-70 mm at sowing to emergence",
+    "water_requirement": "500-800 mm",
+    "dry_spell_tolerance": "7-10 days during flowering",
+    "monsoon_dependence": "moderate to high",
+    "optimal_temp": "21-30°C"
+  },
+  "groundnut": {
+    "sowing_period": "June to July",
+    "crop_duration": "90-120 days",
+    "moisture_requirement": "400-500 mm",
+    "establishment_rainfall": "50-60 mm at sowing to emergence",
+    "water_requirement": "450-600 mm",
+    "dry_spell_tolerance": "5-6 days during kernel filling",
+    "monsoon_dependence": "moderate",
+    "optimal_temp": "25-30°C"
+  },
+  "pulses": {
+    "sowing_period": "June to July",
+    "crop_duration": "60-90 days",
+    "moisture_requirement": "300-400 mm",
+    "establishment_rainfall": "40-60 mm within 2 weeks of sowing",
+    "water_requirement": "300-500 mm",
+    "dry_spell_tolerance": "3-4 days during flowering",
+    "monsoon_dependence": "moderate",
+    "optimal_temp": "20-28°C"
+  }
+}

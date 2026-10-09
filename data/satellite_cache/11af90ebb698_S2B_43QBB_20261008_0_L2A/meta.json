@@ -1,0 +1,32 @@
+{
+  "source": "Sentinel-2 L2A on the public sentinel-cogs S3 bucket (via Element84 Earth Search)",
+  "acquisition_date": "2026-10-08",
+  "acquisition_time": "2026-10-08T05:53:40.312000Z",
+  "scene_id": "S2B_43QBB_20261008_0_L2A",
+  "cloud_cover": 0.001,
+  "cloud_class": "Clear",
+  "images": {
+    "rgb": "/Users/rudra_00_444/Documents/AgriSentinal/data/satellite_cache/11af90ebb698_S2B_43QBB_20261008_0_L2A/rgb.png",
+    "ndvi": "/Users/rudra_00_444/Documents/AgriSentinal/data/satellite_cache/11af90ebb698_S2B_43QBB_20261008_0_L2A/ndvi.png",
+    "ndmi": "/Users/rudra_00_444/Documents/AgriSentinal/data/satellite_cache/11af90ebb698_S2B_43QBB_20261008_0_L2A/ndmi.png"
+  },
+  "ndvi": {
+    "mean": 0.42677944898605347,
+    "min": -0.44075021147727966,
+    "max": 0.8428893685340881,
+    "std": 0.3313581347465515,
+    "pixels": 46638
+  },
+  "ndmi": {
+    "mean": 0.20641274750232697,
+    "min": -0.5124019384384155,
+    "max": 0.6356369853019714,
+    "std": 0.2024075835943222,
+    "pixels": 46638
+  },
+  "swir_band": "B11",
+  "aoi_pixels": 46638,
+  "retrieved_at": "2026-10-08 21:20 UTC",
+  "note": "Live Sentinel-2 L2A retrieval from the scene listed above.",
+  "error": null
+}
