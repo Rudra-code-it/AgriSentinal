@@ -148,19 +148,28 @@ st.markdown("""
 <style>
     /* Color palette variables */
     :root {
-        --forest-green: #1b4d3e;
-        --leaf-green: #2d7d4e;
+        --forest-green: #173D2B;
+        --forest-green-dark: #0f2a1e;
+        --leaf-green: #246B45;
         --leaf-green-light: #3a9d5f;
-        --warm-cream: #faf8f3;
+        --pale-green: #E8F3E8;
+        --soft-sage: #DCE8D8;
+        --warm-cream: #F7F8F2;
         --earth-tone: #8b7355;
         --earth-light: #d4c4b0;
         --amber: #c98700;
         --amber-light: #e8b42a;
+        --pale-amber: #FFF3D0;
         --red-alert: #c0392b;
-        --gray-muted: #6b7280;
-        --gray-light: #f3f4f6;
+        --pale-red: #FDECEC;
+        --dark-red: #991B1B;
+        --dark-amber: #8B5E00;
+        --dark-forest: #173D2B;
+        --dark-muted-green: #40594A;
+        --muted-green: #6b7280;
+        --muted-green-light: #f3f4f6;
         --white: #ffffff;
-        --border-color: #e5e7eb;
+        --border-color: #C5D7C4;
         --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
         --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
         --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
@@ -171,6 +180,7 @@ st.markdown("""
         padding-top: 1.5rem;
         padding-bottom: 2rem;
         max-width: 1400px;
+        background: var(--warm-cream);
     }
 
     /* Header styling */
@@ -272,10 +282,30 @@ st.markdown("""
     }
 
     /* Status colors for metric values */
-    .metric-favorable { color: var(--leaf-green) !important; }
-    .metric-moderate { color: var(--amber) !important; }
-    .metric-unfavorable { color: var(--red-alert) !important; }
-    .metric-unavailable { color: var(--gray-muted) !important; }
+    .metric-favorable { 
+        color: var(--dark-forest) !important; 
+        background: var(--pale-green);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+    .metric-moderate { 
+        color: var(--dark-amber) !important; 
+        background: var(--pale-amber);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+    .metric-unfavorable { 
+        color: var(--dark-red) !important; 
+        background: var(--pale-red);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+    .metric-unavailable { 
+        color: var(--gray-muted) !important; 
+        background: var(--gray-light);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
 
     /* Card grid layouts */
     .card-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
@@ -292,7 +322,7 @@ st.markdown("""
 
     /* Image cards */
     .image-card {
-        background: white;
+        background: var(--pale-green);
         border: 1px solid var(--border-color);
         border-radius: 10px;
         overflow: hidden;
@@ -307,14 +337,14 @@ st.markdown("""
         padding: 0.75rem 1rem;
         font-size: 0.875rem;
         font-weight: 500;
-        color: var(--forest-green);
+        color: var(--dark-forest);
         background: var(--warm-cream);
         border-top: 1px solid var(--border-color);
     }
 
     /* Plotly chart container */
     .plotly-container {
-        background: white;
+        background: var(--pale-green);
         border: 1px solid var(--border-color);
         border-radius: 10px;
         padding: 1rem;
@@ -341,12 +371,17 @@ st.markdown("""
     [data-testid="stSidebar"] h1, 
     [data-testid="stSidebar"] h2, 
     [data-testid="stSidebar"] h3 {
-        color: var(--forest-green);
+        color: var(--dark-forest);
+    }
+    [data-testid="stSidebar"] .stMarkdown, 
+    [data-testid="stSidebar"] .stCaption,
+    [data-testid="stSidebar"] p {
+        color: var(--dark-muted-green) !important;
     }
 
     /* Metric improvements */
     [data-testid="stMetric"] {
-        background: white;
+        background: var(--pale-green);
         border: 1px solid var(--border-color);
         border-radius: 10px;
         padding: 1rem;
@@ -355,24 +390,25 @@ st.markdown("""
     [data-testid="stMetricLabel"] {
         font-size: 0.8rem !important;
         font-weight: 600 !important;
-        color: var(--gray-muted) !important;
+        color: var(--dark-muted-green) !important;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
     [data-testid="stMetricValue"] {
         font-size: 1.5rem !important;
         font-weight: 700 !important;
+        color: var(--dark-forest) !important;
     }
 
     /* Expander styling */
     [data-testid="stExpander"] {
         border: 1px solid var(--border-color) !important;
         border-radius: 10px !important;
-        background: white;
+        background: var(--pale-green);
     }
     [data-testid="stExpander"] summary {
         font-weight: 600;
-        color: var(--forest-green);
+        color: var(--dark-forest);
     }
 
     /* Alert/Info/Warning/Success styling */
@@ -382,6 +418,26 @@ st.markdown("""
     }
     .stAlert[data-baseweb="notification"] {
         box-shadow: var(--shadow-sm);
+    }
+    /* Ensure alert text is readable */
+    .stAlert p, .stAlert div, .stAlert span {
+        color: var(--dark-forest) !important;
+    }
+    .stAlert[data-baseweb="notification"][kind="info"] {
+        background: var(--pale-green) !important;
+        border-left: 4px solid var(--leaf-green) !important;
+    }
+    .stAlert[data-baseweb="notification"][kind="warning"] {
+        background: var(--pale-amber) !important;
+        border-left: 4px solid var(--amber) !important;
+    }
+    .stAlert[data-baseweb="notification"][kind="error"] {
+        background: var(--pale-red) !important;
+        border-left: 4px solid var(--red-alert) !important;
+    }
+    .stAlert[data-baseweb="notification"][kind="success"] {
+        background: var(--pale-green) !important;
+        border-left: 4px solid var(--forest-green) !important;
     }
 
     /* Button styling */
