@@ -9,6 +9,7 @@ import pandas as pd
 from datetime import datetime, timezone
 from models.decision_engine import compute_window_scores, recommend_window
 from analysis.field_outlook import generate_field_outlook
+from analysis.ai_predictor import create_predictor, AICropSowingPredictor
 
 # Satellite pipeline (Phase 1). Imported defensively so a missing optional
 
@@ -1168,6 +1169,231 @@ with st.expander("Limitations & Missing Data"):
 - Model-based soil moisture estimated from texture/organic matter (not measured).
 - No location-specific crop calendar beyond config file.
 """)
+
+# --- 🤖 AI Crop Sowing Window Predictor (Phase 4) ---
+st.header("🤖 AI Crop Sowing Window Predictor")
+
+if st.session_state.field_polygon is None:
+    st.info("Draw a field polygon on the map to enable the AI Crop Sowing Window Predictor.")
+elif not selected_crop:
+    st.info("Select a crop from the sidebar to enable the AI Crop Sowing Window Predictor.")
+else:
+    # Get field centroid
+    lat = st.session_state.field_centroid[0] if st.session_state.field_centroid else None
+    lon = st.session_state.field_centroid[1] if st.session_state.field_centroid else None
+
+    if lat is not None and lon is not None and AICropSowingPredictor is not None:
+        try:
+            with st.spinner("Running AI Crop Sowing Window Predictor..."):
+                predictor = create_predictor()
+                
+                # Get weather data
+                weather_data = load_weather_data(lat, lon)
+                
+                # Get soil data
+                soil_data = load_soil_data(lat, lon)
+                
+                # Get satellite data
+                sat_data = load_satellite_data(st.session_state.field_polygon) if get_field_satellite_data else None
+                
+                # Prepare weather data for predictor
+                historical = weather_data.get("historical") if weather_data else None
+                forecast = weather_data.get("forecast") if weather_data else None
+                recent = weather_data.get("recent") if weather_data else None
+                
+                # Prepare historical rainfall DataFrame for predictor
+                if recent is not None and not recent.empty:
+                    historical_rainfall = recent.copy()
+                    historical_rainfall["rain"] = historical_rainfall["rain_sum"]
+                else:
+                    historical_rainfall = pd.DataFrame()
+                
+                # Prepare forecast DataFrame
+                forecast_df = forecast if forecast is not None else pd.DataFrame()
+                
+                # Prepare recent rainfall DataFrame
+                recent_rainfall = recent if recent is not None else pd.DataFrame()
+                
+                # Prepare satellite data
+                satellite_data = sat_data.get("images") if sat_data else None
+                
+                # Prepare soil data
+                soil_data_dict = soil_data if soil_data else None
+                
+                # Run predictor
+                predictor = create_predictor()
+                result = predictor.predict(
+                    crop=selected_crop.lower(),
+                    field_polygon=st.session_state.field_polygon,
+                    field_centroid=st.session_state.field_centroid,
+                    weather_data=weather_data,
+                    soil_data=soil_data_dict if 'soil_data_dict' in locals() else soil_data,
+                    satellite_data=sat_data.get("images") if sat_data else None,
+                    historical_rainfall=historical_rainfall,
+                    forecast_df=forecast_df,
+                    recent_rainfall=recent_rainfall
+                )
+
+                # Display Current Suitability
+                st.subheader("📊 Current Sowing Suitability")
+                
+                current = result.current
+                status_color = {
+                    "Favorable": "metric-favorable",
+                    "Caution": "metric-moderate",
+                    "Unfavorable": "metric-unfavorable"
+                }.get(current.status.value, "metric-unavailable")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Current Suitability", f"{current.score:.0f}%", 
+                             delta=f"{current.status.value}")
+                with col2:
+                    st.metric("Data Confidence", f"{current.confidence:.0f}%")
+                with col3:
+                    status_class = {
+                        "Favorable": "metric-favorable",
+                        "Caution": "metric-moderate",
+                        "Unfavorable": "metric-unfavorable"
+                    }.get(current.status.value, "metric-unavailable")
+                    st.metric("Status", current.status.value)
+                
+                # Component scores
+                st.subheader("Component Scores")
+                score_cols = st.columns(6)
+                score_data = [
+                    ("Rainfall", current.rainfall_score),
+                    ("Soil Moisture", current.soil_moisture_score),
+                    ("Temperature", current.temperature_score),
+                    ("Dry Spell", current.dry_spell_score),
+                    ("Satellite", current.satellite_score),
+                    ("Crop Compat.", current.crop_compatibility_score),
+                ]
+                for i, (label, value) in enumerate(score_data):
+                    with score_cols[i]:
+                        status_class = "metric-favorable" if value >= 70 else ("metric-moderate" if value >= 40 else "metric-unfavorable")
+                        st.metric(label, f"{value:.0f}%")
+                
+                # Reasons
+                if current.reasons:
+                    st.subheader("Key Factors")
+                    for reason in current.reasons:
+                        st.write(f"• {reason}")
+                
+                # Missing data
+                if current.missing_data:
+                    st.warning("⚠️ Missing data: " + ", ".join(current.missing_data))
+                
+                # Data sources
+                st.caption("Data sources: " + ", ".join(current.data_sources))
+
+                # 30-Day Forecast Windows
+                st.subheader("📅 30-Day Sowing Window Forecast")
+                
+                if result.windows:
+                    # Create Plotly chart
+                    import plotly.graph_objects as go
+                    
+                    window_names = [w.window_name for w in result.windows]
+                    scores = [w.suitability_score for w in result.windows]
+                    statuses = [w.status.value for w in result.windows]
+                    forecast_supported = [w.is_forecast_supported for w in result.windows]
+                    
+                    # Color by status
+                    status_colors = {
+                        "Favorable": "#246B45",
+                        "Caution": "#C98700",
+                        "Unfavorable": "#C0392B"
+                    }
+                    colors = [status_colors.get(s, "#6B7280") for s in statuses]
+                    
+                    # Dash pattern for forecast vs climatology
+                    dash_patterns = ["solid" if fs else "dash" for fs in forecast_supported]
+                    
+                    fig = go.Figure()
+                    fig.add_trace(go.Bar(
+                        x=window_names,
+                        y=scores,
+                        marker_color=colors,
+                        name="Suitability",
+                        text=[f"{s:.0f}%" for s in scores],
+                        textposition="outside",
+                        marker_line_width=1,
+                        marker_line_color="white",
+                    ))
+                    
+                    # Add forecast support indicator
+                    for i, (fs, score) in enumerate(zip(forecast_supported, scores)):
+                        if not fs:
+                            fig.add_annotation(
+                                x=window_names[i],
+                                y=score + 5,
+                                text="📊 Climatology",
+                                showarrow=False,
+                                font=dict(size=10, color="gray"),
+                                bgcolor="rgba(255,255,255,0.8)",
+                                bordercolor="gray",
+                                borderwidth=1,
+                            )
+                    
+                    fig.update_layout(
+                        title="30-Day Sowing Suitability Forecast",
+                        xaxis_title="Window",
+                        yaxis_title="Suitability Score (%)",
+                        yaxis=dict(range=[0, 110]),
+                        height=400,
+                        margin=dict(l=20, r=20, t=50, b=20),
+                        showlegend=False,
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Window cards
+                    st.subheader("Window Details")
+                    for i, window in enumerate(result.windows):
+                        with st.expander(f"{window.window_name} — {window.suitability_score:.0f}% ({window.status.value})"):
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.metric("Suitability", f"{window.suitability_score:.0f}%")
+                                st.metric("Forecast Rain", f"{window.forecast_rain_mm:.1f} mm")
+                                st.metric("Temperature", f"{window.temperature_c:.1f}°C")
+                            with col2:
+                                st.metric("Dry Spell Risk", f"{window.dry_spell_days} days")
+                                st.metric("Forecast Based", "Yes" if window.is_forecast_supported else "No (Climatology)")
+                                st.metric("Confidence", f"{window.confidence:.0f}%")
+                            st.caption("Data source: " + ("Forecast (Open-Meteo)" if window.is_forecast_supported else "Climatology"))
+                    
+                    # Best window
+                    if result.best_window:
+                        st.success(f"🎯 **Best Window: {result.best_window.window_name}** ({result.best_window.suitability_score:.0f}% suitability)")
+                
+                # Recommendation
+                st.subheader("🎯 Recommendation")
+                st.info(result.recommendation)
+                
+                # Key factors
+                if result.key_factors:
+                    st.subheader("Key Factors")
+                    for factor in result.key_factors:
+                        st.write(f"• {factor}")
+                
+                # Data Confidence
+                st.caption(f"Data Confidence: {result.confidence:.0f}%")
+                st.caption("Suitability score reflects estimated probability of favorable crop-establishment conditions. It is NOT a harvest/yield probability.")
+                
+                # Warnings
+                if result.warnings:
+                    for warning in result.warnings:
+                        st.warning(f"⚠️ {warning}")
+                
+                # Data Quality
+                with st.expander("Data Quality & Sources"):
+                    st.json(result.data_quality)
+                
+        except Exception as e:
+            st.error(f"AI Predictor error: {str(e)}")
+            st.info("Unable to generate prediction. Please check that all required data is available.")
+    else:
+        st.warning("AI Predictor not available. Check that all required services are available.")
 
 ## 🌦️ 20–25 Day Field Risk Outlook
 
